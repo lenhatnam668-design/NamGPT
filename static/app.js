@@ -1,206 +1,211 @@
-let currentImageBase64 = null;
-let recognition = null;
-let isRecording = false;
+const $ = id => document.getElementById(id);
+let imageData = null;
+let busy = false;
 
-window.onload = function() {
-    fetch('/api/history')
-        .then(res => res.json())
-        .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-                showChatView();
-                data.forEach(item => {
-                    appendMessage(item.user, 'user', false, item.image);
-                    appendMessage(item.bot, 'bot', false);
-                    addHistorySidebar(item.user);
-                });
-                triggerMathJax();
-            }
-        })
-        .catch(err => {
-            console.log("Chưa có lịch sử hoặc lỗi kết nối API:", err);
-        });
-    setupSpeechRecognition();
+function renderMarkdown(text) {
+  const html = window.marked
+    ? marked.parse(text)
+    : text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  return window.DOMPurify ? DOMPurify.sanitize(html) : html;
+}
+
+function addMessage(text, role, image = null) {
+  const box = document.createElement("div");
+  box.className = "message " + role;
+
+  if (image) {
+    const img = document.createElement("img");
+    img.src = image;
+    img.alt = "Ảnh đề bài";
+    box.appendChild(img);
+  }
+
+  const body = document.createElement("div");
+  body.innerHTML = role === "assistant"
+    ? renderMarkdown(text)
+    : text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+
+  box.appendChild(body);
+
+  if (role === "assistant") {
+    const speak = document.createElement("button");
+    speak.className = "secondary";
+    speak.textContent = "🔊 Đọc câu trả lời";
+    speak.style.marginTop = "10px";
+    speak.onclick = () => {
+      if (!("speechSynthesis" in window)) {
+        alert("Trình duyệt chưa hỗ trợ đọc văn bản.");
+        return;
+      }
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "vi-VN";
+      utterance.rate = 0.95;
+      speechSynthesis.speak(utterance);
+    };
+    box.appendChild(speak);
+  }
+
+  $("messages").appendChild(box);
+
+  if (role === "assistant" && window.MathJax?.typesetPromise) {
+    MathJax.typesetPromise([box]).catch(() => {});
+  }
+
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+function showChat() {
+  $("home").classList.add("hidden");
+  $("chatPage").classList.remove("hidden");
+  loadHistory();
+}
+
+function showHome() {
+  $("chatPage").classList.add("hidden");
+  $("home").classList.remove("hidden");
+}
+
+async function loadHistory() {
+  try {
+    const response = await fetch("/api/history");
+    const data = await response.json();
+    const list = $("history");
+    list.replaceChildren();
+
+    const history = data.history || [];
+
+    for (let i = 0; i < history.length; i += 2) {
+      if (history[i]?.role !== "user") continue;
+
+      const button = document.createElement("button");
+      button.textContent = "♡ " + (history[i].content || "Cuộc trò chuyện").slice(0, 40);
+
+      button.onclick = () => {
+        $("messages").replaceChildren();
+        for (const item of history.slice(i, i + 2)) {
+          addMessage(item.content, item.role);
+        }
+      };
+
+      list.appendChild(button);
+    }
+  } catch (error) {
+    console.error("History:", error);
+  }
+}
+
+$("start").onclick = showChat;
+$("backHome").onclick = showHome;
+
+$("newChat").onclick = () => {
+  $("messages").replaceChildren();
+  const welcome = document.createElement("div");
+  welcome.className = "welcome";
+  welcome.innerHTML = "<h2>Học tiếp nhé, bestie! ♡</h2><p>Gửi câu hỏi mới của bạn.</p>";$("messages").appendChild(welcome);
+  imageData = null;
+  $("preview").classList.add("hidden");
 };
 
-function showChatView() {
-    document.getElementById('welcomeScreen').style.display = 'none';
-    document.getElementById('messageContainer').style.display = 'flex';
-}
+$("clearHistory").onclick = async () => {
+  if (!confirm("Bạn có muốn xóa lịch sử không?")) return;
+  await fetch("/api/history", { method: "DELETE" });
+  $("messages").replaceChildren();
+  $("history").replaceChildren();
+};
 
-function triggerMathJax() {
-    if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
-        MathJax.typesetPromise().catch(err => console.log(err));
-    }
-}
+document.querySelectorAll(".suggest").forEach(button => {
+  button.onclick = () => {
+    $("question").value = button.dataset.q;
+    $("question").focus();
+  };
+});
 
-function handleImageSelected(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+$("image").onchange = event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        currentImageBase64 = e.target.result;
-        document.getElementById('previewImg').src = currentImageBase64;
-        document.getElementById('previewName').textContent = file.name;
-        document.getElementById('imagePreviewBar').style.display = 'flex';
-    };
-    reader.readAsDataURL(file);
-}
+  if (!file.type.startsWith("image/") || file.size > 4 * 1024 * 1024) {
+    alert("Chọn ảnh hợp lệ có dung lượng tối đa 4 MB nhé.");
+    event.target.value = "";
+    return;
+  }
 
-function clearImage() {
-    currentImageBase64 = null;
-    document.getElementById('imageInput').value = '';
-    document.getElementById('imagePreviewBar').style.display = 'none';
-}
+  const reader = new FileReader();
+  reader.onload = () => {
+    imageData = reader.result;
+    $("preview").src = imageData;
+    $("preview").classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
+};
 
-function setupSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+$("voice").onclick = () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    recognition = new SpeechRecognition();
-    recognition.lang = 'vi-VN';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+  if (!SpeechRecognition) {
+    alert("Nhập giọng nói chưa được hỗ trợ trên trình duyệt này. Hãy thử Chrome.");
+    return;
+  }
 
-    recognition.onresult = function(event) {
-        const speechText = event.results[0][0].transcript;
-        document.getElementById('userInput').value = speechText;
-        stopRecordingUI();
-    };
+  const recognition = new SpeechRecognition();
+  recognition.lang = "vi-VN";
+  recognition.interimResults = false;
 
-    recognition.onerror = function() { stopRecordingUI(); };
-    recognition.onend = function() { stopRecordingUI(); };
-}
+  recognition.onresult = event => {
+    $("question").value += ($("question").value ? " " : "") +
+      event.results[0][0].transcript;
+  };
 
-function toggleSpeechRecognition() {
-    if (!recognition) {
-        alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói.");
-        return;
-    }
+  recognition.onerror = () => alert("Không nhận được giọng nói. Hãy kiểm tra quyền micro.");
+  recognition.start();
+};
 
-    if (isRecording) {
-        recognition.stop();
-    } else {
-        try {
-            recognition.start();
-            startRecordingUI();
-        } catch (e) {
-            console.error(e);
-        }
-    }
-}
+$("chatForm").onsubmit = async event => {
+  event.preventDefault();
+  if (busy) return;
 
-function startRecordingUI() {
-    isRecording = true;
-    document.getElementById('micBtn').classList.add('recording');
-    document.getElementById('userInput').placeholder = "Đang lắng nghe bạn nói...";
-}
+  const message = $("question").value.trim();
+  if (!message && !imageData) {
+    alert("Nhập câu hỏi hoặc chọn ảnh trước nhé.");
+    return;
+  }
 
-function stopRecordingUI() {
-    isRecording = false;
-    document.getElementById('micBtn').classList.remove('recording');
-    document.getElementById('userInput').placeholder = "Nhập câu hỏi, chụp ảnh đề bài hoặc bấm micro nói...";
-}
+  const sentImage = imageData;
+  addMessage(message || "Hãy phân tích ảnh này.", "user", sentImage);
 
-function speakText(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const cleanText = text.replace(/[*#`_\[\]]/g, '');
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'vi-VN';
-        utterance.rate = 1.0;
-        window.speechSynthesis.speak(utterance);
-    } else {
-        alert("Trình duyệt không hỗ trợ phát âm thanh.");
-    }
-}
+  $("question").value = "";
+  $("preview").classList.add("hidden");
+  $("image").value = "";
+  imageData = null;
+  busy = true;
+  $("send").disabled = true;
 
-function appendMessage(text, sender, scroll = true, imageUrl = null) {
-    showChatView();
-    const container = document.getElementById('messageContainer');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${sender}-message`;
-    
-    let contentHtml = "";
-    if (imageUrl) {
-        contentHtml += `<img src="${imageUrl}" alt="Uploaded Image" style="max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 8px; display: block;">`;
-    }
+  const waiting = document.createElement("div");
+  waiting.className = "message assistant";
+  waiting.textContent = "Bestie đang suy nghĩ…";
+  $("messages").appendChild(waiting);
 
-    if (sender === 'bot') {
-        contentHtml += marked.parse(text || "");
-        const escapedText = (text || "").replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        contentHtml += `<button class="speak-btn" onclick="speakText('${escapedText}')"><i class="fa-solid fa-volume-high"></i> Nghe đọc</button>`;
-        msgDiv.innerHTML = contentHtml;
-    } else {
-        if (text) {
-            contentHtml += `<div>${text}</div>`;
-        }
-        msgDiv.innerHTML = contentHtml;
-    }
-
-    container.appendChild(msgDiv);
-    triggerMathJax();
-
-    if (scroll) {
-        const chatBox = document.getElementById('chatBox');
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-}
-
-function addHistorySidebar(text) {
-    const historyList = document.getElementById('historyList');
-    const li = document.createElement('li');
-    li.className = 'history-item';
-    li.textContent = text || "[Hình ảnh đề bài]";
-    historyList.appendChild(li);
-}
-
-function sendMessage() {
-    const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if (!text && !currentImageBase64) return;
-
-    const imageToSend = currentImageBase64;
-    appendMessage(text, 'user', true, imageToSend);
-    
-    input.value = '';
-    clearImage();
-
-    fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, image: imageToSend })
-    })
-    .then(res => res.json())
-    .then(data => {
-        const replyText = data.answer || data.error || "Có lỗi xảy ra.";
-        appendMessage(replyText, 'bot');
-        addHistorySidebar(text || "Giải bài qua ảnh");
-    })
-    .catch(err => {
-        console.error("Lỗi gửi tin nhắn:", err);
-        appendMessage("Lỗi kết nối máy chủ!", 'bot');
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, image: sentImage })
     });
-}
 
-function sendPrompt(promptText) {
-    document.getElementById('userInput').value = promptText;
-    sendMessage();
-}
+    const data = await response.json();
+    waiting.remove();
 
-function handleKeyPress(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
-}
+    if (!response.ok) throw new Error(data.error || "Có lỗi xảy ra.");
 
-function clearHistory() {
-    fetch('/api/clear', { method: 'POST' })
-        .then(() => {
-            document.getElementById('messageContainer').innerHTML = '';
-            document.getElementById('messageContainer').style.display = 'none';
-            document.getElementById('welcomeScreen').style.display = 'block';
-            document.getElementById('historyList').innerHTML = '';
-        })
-        .catch(err => console.error(err));
-}
+    addMessage(data.answer, "assistant");
+    await loadHistory();
+  } catch (error) {
+    waiting.remove();
+    addMessage("Mình chưa trả lời được: " + error.message, "assistant");
+  } finally {
+    busy = false;
+    $("send").disabled = false;
+  }
+};
