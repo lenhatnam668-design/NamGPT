@@ -1,96 +1,104 @@
 import os
-import base64
-from flask import Flask, render_template, request, jsonify
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+import logging
+import requests
 
-load_dotenv()
+from flask import Flask, render_template, request, jsonify, session
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret")
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
 
-# Khởi tạo Gemini Client với API Key từ tệp .env
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+logging.basicConfig(level=logging.INFO)
 
-# Lưu lịch sử chat tạm thời trong bộ nhớ phiên bản demo
-chat_history = []
+API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-@app.route('/api/history', methods=['GET'])
+SYSTEM_PROMPT = """
+Bạn là Bestie, người bạn AI học tập thân thiện.
+Mặc định trả lời bằng tiếng Việt; dùng tiếng Anh khi người dùng yêu cầu.
+Giải Toán theo từng bước, kiểm tra phép tính và điều kiện.
+Không bịa kiến thức. Nếu đề bài thiếu dữ kiện, hãy hỏi lại.
+Nếu không chắc chắn, hãy nói rõ và hướng dẫn cách kiểm tra.
+Dùng Markdown và LaTeX khi phù hợp.
+"""
+
+@app.get("/")
+def home():
+    return render_template("index.html")
+
+@app.get("/api/status")
+def status():
+    return jsonify({
+        "ok": True,
+        "api_configured": bool(API_KEY),
+        "model": MODEL
+    })
+
+@app.get("/api/history")
 def get_history():
-    return jsonify(chat_history)
+    return jsonify({"history": session.get("history", [])})
 
-@app.route('/api/chat', methods=['POST'])
+@app.delete("/api/history")
+def clear_history():
+    session["history"] = []
+    return jsonify({"ok": True})
+
+@app.post("/api/chat")
 def chat():
-    data = request.json
-    user_message = data.get('message', '')
-    image_data = data.get('image', None)
-    
-    if not user_message and not image_data:
-        return jsonify({"error": "Nội dung trống!"}), 400
+    if not API_KEY:
+        return jsonify({
+            "error": "Chưa cấu hình GROQ_API_KEY trên Render."
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    question = str(data.get("message", "")).strip()
+    image = data.get("image")
+
+    if not question and not image:
+        return jsonify({"error": "Bạn hãy nhập câu hỏi nhé."}), 400
+
+    if image and (
+        not isinstance(image, str)
+        or not image.startswith("data:image/")
+        or len(image) > 5_500_000
+    ):
+        return jsonify({"error": "Ảnh không hợp lệ hoặc quá lớn."}), 400
+
+    history = session.get("history", [])
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend(history[-12:])
+
+    content = question or "Hãy phân tích ảnh đề bài này."
+
+    if image:
+        content = [
+            {"type": "text", "text": content},
+            {
+                "type": "image_url",
+                "image_url": {"url": image}
+            }
+        ]
+
+    messages.append({"role": "user", "content": content})
 
     try:
-        contents = []
-        
-        # Xây dựng ngữ cảnh hệ thống và lịch sử chat
-        context_prompt = (
-            "Bạn là Nam Smart, trợ lý học tập thông minh, thân thiện, giỏi Toán, Văn, Anh, Sinh... "
-            "Hãy giải thích chi tiết, rõ ràng từng bước và định dạng công thức toán học bằng chuẩn LaTeX.\n\n"
+        response = requests.post(
+            API_URL,
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": MODEL,
+                "messages": messages,
+                "temperature": 0.2,
+                "max_tokens": 1800
+            },
+            timeout=60
         )
-        for item in chat_history[-3:]:
-            context_prompt += f"Học sinh: {item['user']}\nNam Smart: {item['bot']}\n"
-            
-        if user_message:
-            contents.append(context_prompt + f"Học sinh: {user_message}")
-        else:
-            contents.append(context_prompt + "Học sinh gửi một hình ảnh đề bài cần giải đáp.")
 
-        # Xử lý hình ảnh nếu người dùng chụp hoặc tải lên
-        if image_data:
-            if "," in image_data:
-                header, encoded = image_data.split(",", 1)
-                image_bytes = base64.b64decode(encoded)
-                
-                mime_type = "image/jpeg"
-                if "png" in header:
-                    mime_type = "image/png"
-                elif "webp" in header:
-                    mime_type = "image/webp"
-
-                contents.append(
-                    types.Part.from_bytes(
-                        data=image_bytes,
-                        mime_type=mime_type,
-                    )
-                )
-
-        # Gọi Gemini API sử dụng model gemini-1.5-flash ổn định
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=contents,
-        )
-        
-        bot_reply = response.text
-        
-        # Lưu vào lịch sử
-        chat_history.append({
-            "user": user_message if user_message else "[Hình ảnh đề bài]",
-            "bot": bot_reply,
-            "image": image_data
-        })
-        
-        return jsonify({"answer": bot_reply})
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/clear', methods=['POST'])
-def clear_history():
-    chat_history.clear()
-    return jsonify({"status": "success"})
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+        if response.status_code >= 400:
+            logging.error(
+                "AI API error %s: %s",
