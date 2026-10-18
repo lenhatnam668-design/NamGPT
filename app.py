@@ -12,6 +12,7 @@ app = Flask(__name__)
 # Khởi tạo Gemini Client với API Key từ tệp .env
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# Lưu lịch sử chat tạm thời trong bộ nhớ phiên bản demo
 chat_history = []
 
 @app.route('/')
@@ -34,7 +35,11 @@ def chat():
     try:
         contents = []
         
-        context_prompt = "Bạn là Nam Smart, trợ lý học tập thông minh, thân thiện, giỏi Toán, Văn, Anh, Sinh... Hãy giải thích chi tiết, rõ ràng từng bước và định dạng công thức toán học bằng chuẩn LaTeX.\n\n"
+        # Xây dựng ngữ cảnh hệ thống và lịch sử chat
+        context_prompt = (
+            "Bạn là Nam Smart, trợ lý học tập thông minh, thân thiện, giỏi Toán, Văn, Anh, Sinh... "
+            "Hãy giải thích chi tiết, rõ ràng từng bước và định dạng công thức toán học bằng chuẩn LaTeX.\n\n"
+        )
         for item in chat_history[-3:]:
             context_prompt += f"Học sinh: {item['user']}\nNam Smart: {item['bot']}\n"
             
@@ -43,6 +48,7 @@ def chat():
         else:
             contents.append(context_prompt + "Học sinh gửi một hình ảnh đề bài cần giải đáp.")
 
+        # Xử lý hình ảnh nếu người dùng chụp hoặc tải lên
         if image_data:
             if "," in image_data:
                 header, encoded = image_data.split(",", 1)
@@ -61,14 +67,15 @@ def chat():
                     )
                 )
 
-        # Sử dụng model gemini-2.5-flash hoặc gemini-1.5-flash
+        # Gọi Gemini API sử dụng model gemini-1.5-flash ổn định
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=contents,
         )
         
         bot_reply = response.text
         
+        # Lưu vào lịch sử
         chat_history.append({
             "user": user_message if user_message else "[Hình ảnh đề bài]",
             "bot": bot_reply,
