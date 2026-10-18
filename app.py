@@ -101,4 +101,37 @@ def chat():
 
         if response.status_code >= 400:
             logging.error(
-                "AI API error %s: %s",
+                "AI API error %s: %s",response.status_code,
+                response.text[:500]
+            )
+            return jsonify({
+                "error": (
+                    "API key, model hoặc yêu cầu không hợp lệ. "
+                    "Hãy kiểm tra Environment và model đang sử dụng."
+                )
+            }), 502
+
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+
+        history = history + [
+            {"role": "user", "content": question or "[Đã gửi ảnh]"},
+            {"role": "assistant", "content": answer}
+        ]
+        session["history"] = history[-24:]
+
+        return jsonify({"answer": answer})
+
+    except requests.Timeout:
+        return jsonify({"error": "AI phản hồi quá lâu, hãy thử lại."}), 504
+    except (requests.RequestException, KeyError, IndexError, ValueError):
+        logging.exception("Bestie request failed")
+        return jsonify({
+            "error": "Không kết nối được AI hoặc phản hồi không hợp lệ."
+        }), 502
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000"))
+    )
