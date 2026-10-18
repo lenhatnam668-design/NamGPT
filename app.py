@@ -61,6 +61,7 @@ def chat():
                     )
                 )
 
+        # Sử dụng model gemini-2.5-flash hoặc gemini-1.5-flash
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=contents,
