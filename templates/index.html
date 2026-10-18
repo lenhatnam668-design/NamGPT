@@ -1,93 +1,149 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nam Smart - Trợ lý thông minh</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['\\(', '\\)'], ['$', '$']],
-                displayMath: [['\\[', '\\]'], ['$$', '$$']]
-            },
-            svg: { fontCache: 'global' }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<html lang="vi">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Bestie AI ♡</title>
+
+  <link rel="stylesheet" href="/static/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+  <script>
+
+    window.MathJax = {
+
+      tex: {
+
+        inlineMath: [['\\(', '\\)']],
+
+        displayMath: [['\\[', '\\]'], ['$$', '$$']]
+
+      }
+
+    };
+
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 </head>
+
 <body>
 
-    <div class="sidebar">
-        <div class="logo-container">
-            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" onerror="this.src='https://via.placeholder.com/40'">
-            <h2>Nam Smart</h2>
-        </div>
-        <button class="new-chat-btn" onclick="clearHistory()">
-            <i class="fa-solid fa-plus"></i> Cuộc trò chuyện mới
-        </button>
-        <div class="history-title">Lịch sử trò chuyện</div>
-        <ul id="historyList" class="history-list"></ul>
+  <section id="home" class="home">
+
+    <div class="logo">✦ Bestie<span>.</span></div>
+
+    <div class="mascot">୨୧</div>
+
+    <p class="tag">YOUR LITTLE STUDY BUDDY</p>
+
+    <h1>Học tập cùng nhau,<br><span>toả sáng mỗi ngày.</span></h1>
+
+    <p class="intro">
+
+      Một người bạn AI luôn sẵn sàng giúp bạn hiểu bài,
+
+      luyện tiếng Anh và khám phá kiến thức mới.
+
+    </p>
+
+    <button id="start" class="primary">Bắt đầu học cùng Bestie ↗</button>
+
+    <div class="features">
+
+      <div>📚<br><b>Đa môn học</b></div>
+
+      <div>🎙️<br><b>Giọng nói</b></div>
+
+      <div>🖼️<br><b>Gửi hình ảnh</b></div>
+
     </div>
 
-    <div class="main-chat">
-        <div class="chat-header">
-            <span>Không gian học tập / <b>Tất cả môn học</b></span>
-            <span class="demo-badge">● Bản demo</span>
+  </section>
+
+  <section id="chatPage" class="chat-page hidden">
+
+    <aside class="sidebar">
+
+      <div class="logo">✦ Bestie<span>.</span></div>
+
+      <button id="newChat">＋ Cuộc trò chuyện mới</button>
+
+      <h4>LỊCH SỬ GẦN ĐÂY ♡</h4>
+
+      <div id="history"></div>
+
+      <button id="backHome" class="secondary">⌂ Trang chủ</button>
+
+    </aside>
+
+    <main class="chat">
+
+      <header>
+
+        <div><b>✦ Bestie AI</b><small>Luôn sẵn sàng giúp bạn</small></div>
+
+        <button id="clearHistory" class="secondary">Xóa lịch sử</button>
+
+      </header>
+
+      <div id="messages" class="messages">
+
+        <div class="welcome">
+
+          <div class="mascot small">୨୧</div>
+
+          <h2>Xin chào, bestie! ♡</h2>
+
+          <p>Hôm nay mình cùng học điều gì nhỉ?</p>
+
+          <button class="suggest" data-q="Giải thích định lý Pythagore và cho ví dụ.">📐 Giải bài Toán</button>
+
+          <button class="suggest" data-q="Hãy giúp mình luyện IELTS Speaking Part 1.">💬 Luyện tiếng Anh</button>
+
+          <button class="suggest" data-q="Hướng dẫn lập dàn ý nghị luận xã hội.">✍️ Viết bài văn</button>
+
         </div>
 
-        <div id="chatBox" class="chat-box">
-            <div id="welcomeScreen" class="welcome-screen">
-                <div class="subtitle">YOUR PERSONAL STUDY PARTNER</div>
-                <h1>Học thông minh hơn,<br><span>bắt đầu từ đây.</span></h1>
-                <p class="welcome-desc">Chào bạn! Mình là Nam Smart. Hãy chụp ảnh đề bài, nói giọng nói hoặc chọn gợi ý bên dưới nhé.</p>
+      </div>
 
-                <div class="feature-grid">
-                    <div class="feature-card" onclick="sendPrompt('Giải giúp tôi bài toán: Tìm x biết 2x - 1 = 0')">
-                        <div class="card-icon">🧮</div>
-                        <div class="card-title">Giải bài Toán</div>
-                        <div class="card-desc">Giải từng bước, dễ hiểu và có ví dụ cụ thể.</div>
-                    </div>
-                    <div class="feature-card" onclick="sendPrompt('Hãy hướng dẫn tôi lập dàn ý cho bài văn phân tích tác phẩm văn học')">
-                        <div class="card-icon">✍️</div>
-                        <div class="card-title">Học Ngữ văn</div>
-                        <div class="card-desc">Lập ý, phân tích và cải thiện cách viết văn.</div>
-                    </div>
-                </div>
-            </div>
+      <form id="chatForm">
 
-            <div id="messageContainer" class="message-container" style="display: none;"></div>
+        <textarea id="question" placeholder="Nhắn Bestie điều bạn đang thắc mắc..." rows="2"></textarea>
+
+        <div class="tools">
+
+          <label class="tool" for="image">＋ Ảnh</label>
+
+          <input id="image" type="file" accept="image/*" hidden><button type="button" id="voice" class="tool">🎙 Giọng nói</button>
+
+          <span class="spacer"></span>
+
+          <button id="send" class="send" type="submit">➤</button>
+
         </div>
 
-        <div id="imagePreviewBar" class="image-preview-bar">
-            <img id="previewImg" src="" alt="Preview">
-            <span id="previewName" style="font-size: 13px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-            <button class="tool-btn" onclick="clearImage()" title="Xóa ảnh"><i class="fa-solid fa-xmark"></i></button>
-        </div>
+        <img id="preview" class="preview hidden" alt="Ảnh xem trước">
 
-        <div class="input-container">
-            <div class="input-wrapper">
-                <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageSelected(event)">
-                
-                <button class="tool-btn" onclick="document.getElementById('imageInput').click()" title="Chụp ảnh đề bài">
-                    <i class="fa-solid fa-camera"></i>
-                </button>
-                <button id="micBtn" class="tool-btn" onclick="toggleSpeechRecognition()" title="Trò chuyện bằng giọng nói">
-                    <i class="fa-solid fa-microphone"></i>
-                </button>
-                
-                <input type="text" id="userInput" placeholder="Nhập câu hỏi, chụp ảnh đề bài hoặc bấm micro nói..." onkeypress="handleKeyPress(event)">
-                
-                <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-arrow-up"></i></button>
-            </div>
-        </div>
-    </div>
+      </form>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+      <p class="notice">Bestie có thể mắc lỗi. Hãy kiểm tra lại kiến thức quan trọng nhé.</p>
+
+    </main>
+
+  </section>
+
+  <script src="/static/app.js"></script>
+
 </body>
+
 </html>
