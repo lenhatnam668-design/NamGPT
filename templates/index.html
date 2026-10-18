@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bestie AI - Trợ lý học tập</title>
   
   <!-- Google Fonts & FontAwesome -->
@@ -16,7 +16,7 @@
     window.MathJax = {
       tex: {
         inlineMath: [['\\(', '\\)'], ['$', '$']],
-        displayMath: [['[', ']'], ['$$', '$$']]
+        displayMath: [['\\[', '\\]'], ['$$', '$$']]
       },
       svg: { fontCache: 'global' }
     };
@@ -34,6 +34,8 @@
       --text-main: #1f2937;
       --text-muted: #6b7280;
       --border-color: #fbcfe8;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,7 +50,7 @@
 
     .hidden { display: none !important; }
 
-    /* Màn hình trang chủ (Home Section) */
+    /* Home Section */
     .home {
       display: flex;
       flex-direction: column;
@@ -65,11 +67,13 @@
       font-weight: 800;
       color: var(--primary);
       margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .logo span { color: #f472b6; }
 
     .mascot {
-      font-size: 36px;
+      font-size: 42px;
       margin-bottom: 8px;
     }
 
@@ -122,33 +126,46 @@
 
     .features {
       display: flex;
-      gap: 24px;
+      gap: 16px;
       justify-content: center;
+      flex-wrap: wrap;
     }
 
     .features div {
       background: white;
-      padding: 16px 24px;
+      padding: 14px 20px;
       border-radius: 16px;
       border: 1px solid var(--border-color);
       font-size: 14px;
+      font-weight: 500;
       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
 
-    /* Giao diện Chat Page */
+    /* Chat Section */
     .chat-page {
       display: flex;
       height: 100vh;
       background: var(--bg-chat);
+      position: relative;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 10;
     }
 
     .sidebar {
-      width: 280px;
+      width: 290px;
       background: var(--sidebar-bg);
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
       padding: 20px;
+      z-index: 20;
+      transition: transform 0.3s ease;
     }
 
     .sidebar .logo {
@@ -174,14 +191,30 @@
     }
     .sidebar button#newChat:hover { background: var(--primary-hover); }
 
+    .sidebar-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
     .sidebar h4 {
       font-size: 11px;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 10px;
     }
+
+    .clear-all-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .clear-all-btn:hover { color: var(--danger); }
 
     #history {
       flex: 1;
@@ -191,21 +224,63 @@
       gap: 6px;
       list-style: none;
       margin-bottom: 16px;
+      padding-right: 4px;
     }
 
     .history-item {
       padding: 10px 12px;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 13px;
       color: #4b5563;
       background: #fdf2f8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .history-item.active {
+      background: #fce7f3;
+      color: var(--primary);
+      font-weight: 600;
+      border-color: var(--border-color);
+    }
+
+    .history-item:hover { background: #fce7f3; color: var(--primary); }
+
+    .history-title {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: background 0.2s;
+      flex: 1;
+      margin-right: 8px;
     }
-    .history-item:hover { background: #fce7f3; color: var(--primary); }
+
+    .delete-session-btn {
+      opacity: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    .history-item:hover .delete-session-btn {
+      opacity: 1;
+    }
+
+    .delete-session-btn:hover {
+      color: var(--danger);
+    }
+
+    .sidebar-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     button.secondary {
       background: transparent;
@@ -217,6 +292,10 @@
       font-weight: 600;
       font-size: 13px;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     button.secondary:hover { background: #fdf2f8; color: var(--primary); }
 
@@ -226,6 +305,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      min-width: 0;
     }
 
     .chat header {
@@ -235,6 +315,21 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      color: var(--primary);
+      cursor: pointer;
     }
 
     .chat header div b { display: block; font-size: 16px; color: #111827; }
@@ -259,8 +354,8 @@
     }
 
     .welcome .mascot.small { font-size: 42px; margin-bottom: 10px; }
-    .welcome h2 { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 8px; }
-    .welcome p { color: var(--text-muted); font-size: 15px; margin-bottom: 20px; }
+    .welcome h2 { font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    .welcome p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
 
     button.suggest {
       display: block;
@@ -283,13 +378,20 @@
       color: var(--primary);
     }
 
-    /* Khung tin nhắn */
     .message-container {
       width: 100%;
       max-width: 760px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 4px;
+    }
+
+    .message-author {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 4px;
+      margin-right: 4px;
     }
 
     .message {
@@ -300,6 +402,11 @@
       line-height: 1.6;
       word-wrap: break-word;
     }
+
+    .message p { margin-bottom: 8px; }
+    .message p:last-child { margin-bottom: 0; }
+    .message pre { background: #f3f4f6; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+    .message code { font-family: monospace; background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
 
     .user-message {
       background: var(--primary);
@@ -314,4 +421,507 @@
       color: var(--text-main);
       align-self: flex-start;
       border: 1px solid var(--border-color);
-      border-bottom-left-radius: 4px
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Chat Input Bar */
+    .chat-input-area {
+      padding: 16px 24px;
+      background: white;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-wrapper {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      background: #fff5f7;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 8px 12px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      resize: none;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: var(--text-main);
+      max-height: 120px;
+      padding: 6px;
+    }
+
+    .input-wrapper button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .input-wrapper button:hover { background: var(--primary-hover); }
+
+    /* Modal / Custom Alert */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .modal-content h3 { margin-bottom: 10px; font-size: 18px; color: #111827; }
+    .modal-content p { margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+    .modal-actions button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+    .btn-cancel { background: #e5e7eb; color: #374151; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: var(--danger-hover); }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: block; }
+      .sidebar {
+        position: absolute;
+        top: 0; left: 0; bottom: 0;
+        transform: translateX(-100%);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .home h1 { font-size: 28px; }
+      .message { max-width: 90%; }
+      .chat-input-area { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Home Section -->
+  <div id="homeSection" class="home">
+    <div class="mascot">🌸</div>
+    <div class="tag">Trợ lý học tập thông minh</div>
+    <h1>Chào mừng đến với<br><span>Bestie AI</span></h1>
+    <p class="intro">Người bạn đồng hành đáng yêu giúp bạn giải đáp mọi thắc mắc học tập, ôn thi hiệu quả và phát triển bản thân mỗi ngày.</p>
+    <button class="primary" id="startBtn">Bắt đầu trò chuyện <i class="fa-solid fa-arrow-right"></i></button>
+    <div class="features">
+      <div>✨ Giải đáp 24/7</div>
+      <div>📚 Hỗ trợ đa môn học</div>
+      <div>💡 Tóm tắt &amp; Ôn tập</div>
+    </div>
+  </div>
+
+  <!-- Chat Page -->
+  <div id="chatSection" class="chat-page hidden">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">🌸 Bestie AI</div>
+      <button id="newChat"><i class="fa-solid fa-plus"></i> Cuộc trò chuyện mới</button>
+      
+      <div class="sidebar-header-row">
+        <h4>Lịch sử trò chuyện</h4>
+        <button class="clear-all-btn" id="clearAllBtn" title="Xóa tất cả"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+      
+      <ul id="history"></ul>
+
+      <div class="sidebar-footer">
+        <button class="secondary" id="backHomeBtn"><i class="fa-solid fa-house"></i> Về trang chủ</button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Container -->
+    <main class="chat">
+      <header>
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
+          <div>
+            <b>Bestie AI</b>
+            <small>Luôn sẵn sàng hỗ trợ bạn học tập</small>
+          </div>
+        </div>
+      </header>
+
+      <div class="messages" id="messagesContainer">
+        <div class="welcome" id="welcomeScreen">
+          <div class="mascot small">🌸</div>
+          <h2>Hôm nay bạn muốn học gì nào?</h2>
+          <p>Hãy chọn một gợi ý bên dưới hoặc nhập câu hỏi bất kỳ vào khung chat nhé!</p>
+          <button class="suggest" onclick="sendPrompt('Giải thích giúp mình định luật vạn vật hấp dẫn và công thức tính.')">🪐 Giải thích giúp mình định luật vạn vật hấp dẫn</button>
+          <button class="suggest" onclick="sendPrompt('Lập kế hoạch ôn thi môn Toán trong 3 ngày hiệu quả nhất.')">📝 Lập kế hoạch ôn thi môn Toán trong 3 ngày</button>
+          <button class="suggest" onclick="sendPrompt('Chia sẻ cho mình một vài phương pháp ghi chú thông minh (như Cornell).')">💡 Phương pháp ghi chú thông minh Cornell</button>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <textarea id="userInput" placeholder="Nhập câu hỏi của bạn..." rows="1"></textarea>
+          <button id="sendBtn" title="Gửi câu hỏi"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="modalTitle">Xác nhận xóa</h3>
+      <p id="modalDesc">Bạn có chắc chắn muốn xóa lịch sử cuộc trò chuyện này không?</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modalCancel">Hủy</button>
+        <button class="btn-danger" id="modalConfirm">Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // DOM Elements
+    const homeSection = document.getElementById('homeSection');
+    const chatSection = document.getElementById('chatSection');
+    const startBtn = document.getElementById('startBtn');
+    const backHomeBtn = document.getElementById('backHomeBtn');
+    const newChatBtn = document.getElementById('newChat');
+    const sendBtn = document.getElementById('sendBtn');
+    const userInput = document.getElementById('userInput');
+    const messagesContainer = document.getElementById('messagesContainer');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const historyList = document.getElementById('history');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    // Modal elements
+    const confirmModal = document.getElementById('confirmModal');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalConfirm = document.getElementById('modalConfirm');
+    let pendingDeleteAction = null;
+
+    // State
+    let sessions = []; // Array of session objects: { id, title, history: [...] }
+    let currentSessionId = null;
+
+    // Local Storage Keys
+    const STORAGE_KEY = 'BESTIE_AI_SESSIONS_V1';
+
+    // System Prompt for Bestie AI
+    const SYSTEM_PROMPT = {
+      role: "user",
+      parts: [{ text: "Bạn là Bestie AI - một trợ lý học tập thân thiện, đáng yêu, vui vẻ và luôn tràn đầy năng lượng tích cực. Bạn sử dụng từ ngữ gần gũi (thường xưng 'Bestie' hoặc 'tớ' và gọi người dùng là 'cậu' hoặc 'bạn'), kèm các emoji nhẹ nhàng dễ thương (🌸, ✨, 📚, 💡, 📝). Hãy giúp người dùng giải đáp thắc mắc học tập chi tiết, rõ ràng, dễ hiểu, định dạng bằng Markdown ngắn gọn và công thức MathJax khi cần thiết." }]
+    };
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSessionsFromStorage();
+      if (sessions.length > 0) {
+        switchSession(sessions[0].id);
+      } else {
+        createNewSession(false);
+      }
+      renderHistorySidebar();
+    });
+
+    // Navigation Events
+    startBtn.addEventListener('click', () => {
+      homeSection.classList.add('hidden');
+      chatSection.classList.remove('hidden');
+    });
+
+    backHomeBtn.addEventListener('click', () => {
+      chatSection.classList.add('hidden');
+      homeSection.classList.remove('hidden');
+    });
+
+    // Mobile Sidebar Toggles
+    mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
+    sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+
+    function toggleMobileSidebar() {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('open');
+    }
+
+    // Auto-resize textarea
+    userInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Send Message Trigger
+    sendBtn.addEventListener('click', handleUserSend);
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleUserSend();
+      }
+    });
+
+    newChatBtn.addEventListener('click', () => {
+      createNewSession(true);
+      if (window.innerWidth <= 768) toggleMobileSidebar();
+    });
+
+    clearAllBtn.addEventListener('click', () => {
+      showModal("Xóa tất cả lịch sử", "Bạn có chắc muốn xóa toàn bộ các cuộc trò chuyện đã lưu không?", () => {
+        sessions = [];
+        saveSessionsToStorage();
+        createNewSession(true);
+      });
+    });
+
+    // Session Management Logic
+    function createNewSession(switchToIt = true) {
+      const newSession = {
+        id: Date.now().toString(),
+        title: 'Trò chuyện mới',
+        history: []
+      };
+      sessions.unshift(newSession);
+      saveSessionsToStorage();
+      renderHistorySidebar();
+
+      if (switchToIt) {
+        switchSession(newSession.id);
+      }
+    }
+
+    function switchSession(sessionId) {
+      currentSessionId = sessionId;
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) return;
+
+      renderHistorySidebar();
+      renderSessionMessages(session);
+    }
+
+    function renderSessionMessages(session) {
+      messagesContainer.innerHTML = '';
+
+      if (!session.history || session.history.length === 0) {
+        messagesContainer.appendChild(welcomeScreen);
+        welcomeScreen.style.display = 'block';
+      } else {
+        welcomeScreen.style.display = 'none';
+        session.history.forEach(item => {
+          const text = item.parts[0].text;
+          const role = item.role === 'user' ? 'user-message' : 'bot-message';
+          appendMessageUI(text, role, false);
+        });
+        triggerMathJax();
+      }
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function renderHistorySidebar() {
+      historyList.innerHTML = '';
+      sessions.forEach(session => {
+        const li = document.createElement('li');
+        li.className = `history-item ${session.id === currentSessionId ? 'active' : ''}`;
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'history-title';
+        titleSpan.textContent = session.title;
+        titleSpan.addEventListener('click', () => {
+          switchSession(session.id);
+          if (window.innerWidth <= 768) toggleMobileSidebar();
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-session-btn';
+        delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        delBtn.title = 'Xóa cuộc trò chuyện';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showModal("Xóa cuộc trò chuyện", `Xóa "${session.title}" khỏi lịch sử?`, () => {
+            deleteSession(session.id);
+          });
+        });
+
+        li.appendChild(titleSpan);
+        li.appendChild(delBtn);
+        historyList.appendChild(li);
+      });
+    }
+
+    function deleteSession(sessionId) {
+      sessions = sessions.filter(s => s.id !== sessionId);
+      saveSessionsToStorage();
+
+      if (sessions.length === 0) {
+        createNewSession(true);
+      } else if (currentSessionId === sessionId) {
+        switchSession(sessions[0].id);
+      } else {
+        renderHistorySidebar();
+      }
+    }
+
+    // Message Handling & API
+    function sendPrompt(text) {
+      userInput.value = text;
+      handleUserSend();
+    }
+
+    async function handleUserSend() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      const currentSession = sessions.find(s => s.id === currentSessionId);
+      if (!currentSession) return;
+
+      // Update Title if it's new
+      if (currentSession.history.length === 0) {
+        welcomeScreen.style.display = 'none';
+        currentSession.title = text.length > 28 ? text.substring(0, 28) + '...' : text;
+        renderHistorySidebar();
+      }
+
+      userInput.value = '';
+      userInput.style.height = 'auto';
+
+      // UI Append User Msg
+      appendMessageUI(text, 'user-message');
+      currentSession.history.push({ role: "user", parts: [{ text }] });
+      saveSessionsToStorage();
+
+      // Bot Loading State
+      const botMsgDiv = appendMessageUI('Đang suy nghĩ...', 'bot-message');
+
+      try {
+        const responseText = await callGeminiAPI(currentSession.history);
+        botMsgDiv.innerHTML = DOMPurify.sanitize(marked.parse(responseText));
+        
+        triggerMathJax();
+
+        currentSession.history.push({ role: "model", parts: [{ text: responseText }] });
+        saveSessionsToStorage();
+      } catch (error) {
+        botMsgDiv.innerText = "Xin lỗi cún nhỏ, đã xảy ra lỗi khi kết nối với Bestie AI. Vui lòng thử lại nhé! 🌸";
+        console.error("Gemini API Error:", error);
+      }
+    }
+
+    function appendMessageUI(text, className, scroll = true) {
+      const container = document.createElement('div');
+      container.className = 'message-container';
+      container.style.alignItems = className === 'user-message' ? 'flex-end' : 'flex-start';
+
+      const author = document.createElement('div');
+      author.className = 'message-author';
+      author.textContent = className === 'user-message' ? 'Bạn' : 'Bestie AI';
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${className}`;
+
+      if (className === 'user-message') {
+        msgDiv.textContent = text;
+      } else {
+        msgDiv.innerHTML = DOMPurify.sanitize(marked.parse(text));
+      }
+
+      container.appendChild(author);
+      container.appendChild(msgDiv);
+      messagesContainer.appendChild(container);
+
+      if (scroll) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      return msgDiv;
+    }
+
+    function triggerMathJax() {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise().catch((err) => console.log('MathJax error:', err));
+      }
+    }
+
+    // Call Gemini API
+    async function callGeminiAPI(history) {
+      const apiKey = ""; // API key can be set here if required
+      // Gemini 1.5 Flash endpoint
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+      const contents = [SYSTEM_PROMPT, ...history];
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: contents })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API response status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    // Storage Persistence
+    function saveSessionsToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      } catch (e) {
+        console.error("Failed to save to localStorage", e);
+      }
+    }
+
+    function loadSessionsFromStorage() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+          sessions = JSON.parse(data);
+        }
+      } catch (e) {
+        console.error("Failed to load from localStorage", e);
+        sessions = [];
+      }
+    }
+
+    // Modal Confirmation Dialog
+    function showModal(title, desc, onConfirm) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalDesc').textContent = desc;
+      pendingDeleteAction = onConfirm;
+      confirmModal.classList.remove('hidden');
+    }
+
+    modalCancel.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      pendingDeleteAction = null;
+    });
+
+    modalConfirm.addEventListener('click', () => {
+      if (pendingDeleteAction) pendingDeleteAction();
+      confirmModal.classList.add('hidden');
+      pendingDeleteAction = null;
+    });
+  </script>
+</body>
+</html>
