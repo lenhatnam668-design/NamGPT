@@ -1,149 +1,317 @@
 <!DOCTYPE html>
-
 <html lang="vi">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>Bestie AI ♡</title>
-
-  <link rel="stylesheet" href="/static/style.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-
+  <title>Bestie AI - Trợ lý học tập</title>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Markdown, DOMPurify & MathJax -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
   <script>
-
     window.MathJax = {
-
       tex: {
-
-        inlineMath: [['\\(', '\\)']],
-
-        displayMath: [['\\[', '\\]'], ['$$', '$$']]
-
-      }
-
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['[', ']'], ['$$', '$$']]
+      },
+      svg: { fontCache: 'global' }
     };
-
   </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --primary: #ec4899;
+      --primary-hover: #db2777;
+      --bg-home: #fdf2f8;
+      --bg-chat: #fff5f7;
+      --sidebar-bg: #ffffff;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #fbcfe8;
+    }
 
-</head>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-<body>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-home);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+    }
 
-  <section id="home" class="home">
+    .hidden { display: none !important; }
 
-    <div class="logo">✦ Bestie<span>.</span></div>
+    /* Màn hình trang chủ (Home Section) */
+    .home {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #fdf2f8 0%, #fae8ff 100%);
+    }
 
-    <div class="mascot">୨୧</div>
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .logo span { color: #f472b6; }
 
-    <p class="tag">YOUR LITTLE STUDY BUDDY</p>
+    .mascot {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
 
-    <h1>Học tập cùng nhau,<br><span>toả sáng mỗi ngày.</span></h1>
+    .tag {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
 
-    <p class="intro">
+    .home h1 {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      color: #111827;
+    }
 
-      Một người bạn AI luôn sẵn sàng giúp bạn hiểu bài,
+    .home h1 span { color: var(--primary); }
 
-      luyện tiếng Anh và khám phá kiến thức mới.
+    .intro {
+      max-width: 500px;
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
 
-    </p>
+    button.primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
+      transition: all 0.2s ease;
+      margin-bottom: 40px;
+    }
 
-    <button id="start" class="primary">Bắt đầu học cùng Bestie ↗</button>
+    button.primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+    }
 
-    <div class="features">
+    .features {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+    }
 
-      <div>📚<br><b>Đa môn học</b></div>
+    .features div {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
 
-      <div>🎙️<br><b>Giọng nói</b></div>
+    /* Giao diện Chat Page */
+    .chat-page {
+      display: flex;
+      height: 100vh;
+      background: var(--bg-chat);
+    }
 
-      <div>🖼️<br><b>Gửi hình ảnh</b></div>
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
 
-    </div>
+    .sidebar .logo {
+      text-align: left;
+      margin-bottom: 20px;
+    }
 
-  </section>
+    .sidebar button#newChat {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      transition: background 0.2s;
+    }
+    .sidebar button#newChat:hover { background: var(--primary-hover); }
 
-  <section id="chatPage" class="chat-page hidden">
+    .sidebar h4 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
 
-    <aside class="sidebar">
+    #history {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      list-style: none;
+      margin-bottom: 16px;
+    }
 
-      <div class="logo">✦ Bestie<span>.</span></div>
+    .history-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #4b5563;
+      background: #fdf2f8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.2s;
+    }
+    .history-item:hover { background: #fce7f3; color: var(--primary); }
 
-      <button id="newChat">＋ Cuộc trò chuyện mới</button>
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button.secondary:hover { background: #fdf2f8; color: var(--primary); }
 
-      <h4>LỊCH SỬ GẦN ĐÂY ♡</h4>
+    /* Main Chat Layout */
+    .chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
 
-      <div id="history"></div>
+    .chat header {
+      padding: 16px 24px;
+      background: white;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-      <button id="backHome" class="secondary">⌂ Trang chủ</button>
+    .chat header div b { display: block; font-size: 16px; color: #111827; }
+    .chat header div small { color: var(--text-muted); font-size: 12px; }
 
-    </aside>
+    .messages {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
 
-    <main class="chat">
+    .welcome {
+      max-width: 600px;
+      width: 100%;
+      margin: auto;
+      text-align: center;
+      padding: 20px;
+    }
 
-      <header>
+    .welcome .mascot.small { font-size: 42px; margin-bottom: 10px; }
+    .welcome h2 { font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    .welcome p { color: var(--text-muted); font-size: 15px; margin-bottom: 20px; }
 
-        <div><b>✦ Bestie AI</b><small>Luôn sẵn sàng giúp bạn</small></div>
+    button.suggest {
+      display: block;
+      width: 100%;
+      background: white;
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    button.suggest:hover {
+      border-color: var(--primary);
+      background: #fdf2f8;
+      color: var(--primary);
+    }
 
-        <button id="clearHistory" class="secondary">Xóa lịch sử</button>
+    /* Khung tin nhắn */
+    .message-container {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-      </header>
+    .message {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
 
-      <div id="messages" class="messages">
+    .user-message {
+      background: var(--primary);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      white-space: pre-wrap;
+    }
 
-        <div class="welcome">
-
-          <div class="mascot small">୨୧</div>
-
-          <h2>Xin chào, bestie! ♡</h2>
-
-          <p>Hôm nay mình cùng học điều gì nhỉ?</p>
-
-          <button class="suggest" data-q="Giải thích định lý Pythagore và cho ví dụ.">📐 Giải bài Toán</button>
-
-          <button class="suggest" data-q="Hãy giúp mình luyện IELTS Speaking Part 1.">💬 Luyện tiếng Anh</button>
-
-          <button class="suggest" data-q="Hướng dẫn lập dàn ý nghị luận xã hội.">✍️ Viết bài văn</button>
-
-        </div>
-
-      </div>
-
-      <form id="chatForm">
-
-        <textarea id="question" placeholder="Nhắn Bestie điều bạn đang thắc mắc..." rows="2"></textarea>
-
-        <div class="tools">
-
-          <label class="tool" for="image">＋ Ảnh</label>
-
-          <input id="image" type="file" accept="image/*" hidden><button type="button" id="voice" class="tool">🎙 Giọng nói</button>
-
-          <span class="spacer"></span>
-
-          <button id="send" class="send" type="submit">➤</button>
-
-        </div>
-
-        <img id="preview" class="preview hidden" alt="Ảnh xem trước">
-
-      </form>
-
-      <p class="notice">Bestie có thể mắc lỗi. Hãy kiểm tra lại kiến thức quan trọng nhé.</p>
-
-    </main>
-
-  </section>
-
-  <script src="/static/app.js"></script>
-
-</body>
-
-</html>
+    .bot-message {
+      background: white;
+      color: var(--text-main);
+      align-self: flex-start;
+      border: 1px solid var(--border-color);
+      border-bottom-left-radius: 4px
